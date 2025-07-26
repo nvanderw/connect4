@@ -9,17 +9,19 @@ class TestBoardMoves(unittest.TestCase):
         # Fill up the second column of the board; all the other moves should be valid
         b.all_pieces = (-1) & board.COLUMN_MASKS[1]
 
-        self.assertRaises(board.IllegalMoveException, lambda: b.apply_move(-1))
-        self.assertRaises(board.IllegalMoveException, lambda: b.apply_move(board.NUM_COLS))
+        # Out-of-bounds checks
+        with self.assertRaises(board.IllegalMoveException):
+            b.apply_move(-1)
+
+        with self.assertRaises(board.IllegalMoveException):
+            b.apply_move(board.NUM_COLS)
 
         for c in range(board.NUM_COLS):
-            def callable():
-                b.apply_move(c)
-
             if c == 1:
-                self.assertRaises(board.IllegalMoveException, callable)
+                with self.assertRaises(board.IllegalMoveException):
+                    b.apply_move(c)
             else:
-                callable()
+                b.apply_move(c)
     
     def test_get_legal_move_cols(self):
         b = board.Board()
