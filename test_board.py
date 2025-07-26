@@ -2,7 +2,23 @@ import unittest
 import board
 import random
 
-class TestBoardMoves(unittest.TestCase):
+from dataclasses import dataclass
+
+# Helper function to parse a human-readable bitboard into an int.
+def parse_board(input: list[str]) -> int:
+    result = 0
+
+    for col in input:
+        for bit in col:
+            if bit != "0" and bit != "1":
+                raise Exception(f"Unexpected input: {bit}")
+            
+            result <<= 1
+            result |= int(bit)
+    
+    return result
+
+class TestBoard(unittest.TestCase):
     def test_move_validation(self):
         b = board.Board()
 
@@ -49,6 +65,184 @@ class TestBoardMoves(unittest.TestCase):
         # Expect empty board
         self.assertEqual(0, b.all_pieces)
         self.assertEqual(0, b.player_board)
+    
+    def test_last_move_won(self):
+        @dataclass
+        class TestCase:
+            name: str
+            expect_win: bool
+            bits: list[str]
+
+        test_cases = [
+            # Vertical test cases
+            TestCase(
+                name = "Vertical win",
+                expect_win = True,
+                bits = [
+                    "0000000",
+                    "0000000",
+                    "0011110",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Vertical not-win #1",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0000000",
+                    "0011010",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Vertical not-win #2",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0000000",
+                    "0011100",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+
+            # Horizontal test cases
+            TestCase(
+                name = "Horizontal win",
+                expect_win = True,
+                bits = [
+                    "0000000",
+                    "0001000",
+                    "0001000",
+                    "0001000",
+                    "0001000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Horizontal not-win #1",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0001000",
+                    "0001000",
+                    "0001000",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Horizontal not-win #2",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0001000",
+                    "0001000",
+                    "0000000",
+                    "0001000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+
+            # Diagonal test cases /
+            TestCase(
+                name = "Diagonal win /",
+                expect_win = True,
+                bits = [
+                    "0000000",
+                    "0000010",
+                    "0000100",
+                    "0001000",
+                    "0010000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Diagonal not-win /1",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0000010",
+                    "0000100",
+                    "0000000",
+                    "0010000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Diagonal not-win /2",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0000010",
+                    "0000100",
+                    "0001000",
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                ]
+            ),
+
+            # Diagonal test cases \
+            TestCase(
+                name = "Diagonal win \\",
+                expect_win = True,
+                bits = [
+                    "0000000",
+                    "0000000",
+                    "0010000",
+                    "0001000",
+                    "0000100",
+                    "0000010",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Diagonal not-win \\1",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0000000",
+                    "0010000",
+                    "0000000",
+                    "0000100",
+                    "0000010",
+                    "0000000",
+                ]
+            ),
+            TestCase(
+                name = "Diagonal not-win \\2",
+                expect_win = False,
+                bits = [
+                    "0000000",
+                    "0000000",
+                    "0000000",
+                    "0001000",
+                    "0000100",
+                    "0000010",
+                    "0000000",
+                ]
+            ),
+        ]
+
+        for test_case in test_cases:
+            b = board.Board()
+            b.player_board = parse_board(test_case.bits)
+            self.assertEqual(test_case.expect_win, b.last_move_won(), f"Failed test case \"{test_case.name}\"")
 
 if __name__ == '__main__':
     unittest.main()

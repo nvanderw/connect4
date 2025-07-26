@@ -5,6 +5,8 @@
 # board rotated 90 degrees to the right.
 
 # To keep columns from "overflowing" into each other we'll keep 1 sentinel bit between them.
+# (This makes it easy to implement win detection via shifts without accidentally shifting bits from one
+# column into the next).
 # So the board looks like the following, from least-significant bit to most-significant bit:
 
 # a0 a1 a2 a3 a4 a5 0
@@ -99,3 +101,31 @@ class Board:
         # Just clear it from all_pieces and then swap the player.
         self.all_pieces ^= move_mask
         self.player_board ^= self.all_pieces
+    
+    def last_move_won(self) -> bool:
+        # Since we've already swapped to the next player after applying the last move,
+        # we need to evaluate the opponent's board here.
+        opp_board = self.all_pieces ^ self.player_board
+
+        # Vertical win detection: how would we test for 2 consecutive bits? Shift and AND
+        m = opp_board & (opp_board >> 1) # Each 1 here represents the lowest bit in a 2-in-a-row.
+
+        # 4 consecutive bits is just 2 pairs of 2 consecutive bits.
+        if m & (m >> 2):
+            return True
+
+        # Horizontal win detection: basically the same as vertical, but shifting by STRIDE instead of 1.
+        m = opp_board & (opp_board >> STRIDE)
+        if m & (m >> (2 * STRIDE)):
+            return True
+        
+        # Diagonals: same as above, but we'll use STRIDE - 1 or STRIDE + 1 to "offset" the check up or down.
+        m = opp_board & (opp_board >> (STRIDE - 1))
+        if m & (m >> (2 * (STRIDE - 1))):
+            return True
+
+        m = opp_board & (opp_board >> (STRIDE + 1))
+        if m & (m >> (2 * (STRIDE + 1))):
+            return True
+        
+        return False
