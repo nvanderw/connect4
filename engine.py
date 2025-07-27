@@ -16,6 +16,12 @@ def center_weight(player_board: int):
     return score
 
 def eval(b: Board) -> int:
+    # There's a lot more we could add to the eval. 
+    # Some possibilities:
+    # * Track progress toward wins. Pre-generate masks for all winning lines (there are only 69 of them).
+    #   Give a big bonus for 3-in-a-row (or column/diag) with an empty space.
+    # * Track immediate threats (where the space can be filled on the next turn).
+    # * Track double-threats/forks.
     return center_weight(b.player_board) - center_weight(b.opp_board())
 
 class Engine:
@@ -79,7 +85,8 @@ class Engine:
         
         value = alpha 
 
-        # TODO: better move ordering
+        # TODO: better move ordering. Start with the center and move toward the sides.
+        # If we use iterative deepening, start with the PV from the depth - 1 search.
         candidates = board.get_legal_move_cols()
         for i, candidate in enumerate(candidates):
             board.apply_move(candidate)
