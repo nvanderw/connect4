@@ -64,6 +64,9 @@ class IllegalMoveException(Exception):
     pass
 
 class Board:
+    """
+    Represents a 7x6 Connect-4 board.
+    """
     def __init__(self):
         # player_board is the bits of the side to move.
         # all_pieces is the bits of every piece on the board.
@@ -75,10 +78,15 @@ class Board:
         self.move_stack = []
     
     def get_legal_move_cols(self) -> list[int]:
+        """
+        Gets the column indices which are legal moves i.e. aren't already full.
+        """
         return [c for c in range(NUM_COLS) if (TOP_MASKS[c] & self.all_pieces) == 0]
     
-    # Drop a piece into column c
     def apply_move(self, c: int):
+        """
+        Drops a piece into the column index c.
+        """
         if c < 0 or c >= NUM_COLS:
             raise IllegalMoveException(f"Column is out-of-bounds: {c}")
 
@@ -95,6 +103,9 @@ class Board:
         self.move_stack.append(move_mask)
     
     def unapply_move(self):
+        """
+        Reverts the most recent move.
+        """
         move_mask = self.move_stack.pop()
 
         # The last move was made by the opponent; we don't need to undo it from this player's board.
@@ -102,30 +113,42 @@ class Board:
         self.all_pieces ^= move_mask
         self.player_board ^= self.all_pieces
     
-    def last_move_won(self) -> bool:
-        # Since we've already swapped to the next player after applying the last move,
-        # we need to evaluate the opponent's board here.
-        opp_board = self.all_pieces ^ self.player_board
+    @staticmethod
+    def has_four(player_board) -> bool:
+        """
+        Checks if a given player board has 4 in a row, column, or diagonal.
+        Use last_move_won to determine if the last applied move was a win for the previous player.
+        """
 
         # Vertical win detection: how would we test for 2 consecutive bits? Shift and AND
-        m = opp_board & (opp_board >> 1) # Each 1 here represents the lowest bit in a 2-in-a-row.
+        m = player_board & (player_board >> 1) # Each 1 here represents the lowest bit in a 2-in-a-row.
 
         # 4 consecutive bits is just 2 pairs of 2 consecutive bits.
         if m & (m >> 2):
             return True
 
         # Horizontal win detection: basically the same as vertical, but shifting by STRIDE instead of 1.
-        m = opp_board & (opp_board >> STRIDE)
+        m = player_board & (player_board >> STRIDE)
         if m & (m >> (2 * STRIDE)):
             return True
         
         # Diagonals: same as above, but we'll use STRIDE - 1 or STRIDE + 1 to "offset" the check up or down.
-        m = opp_board & (opp_board >> (STRIDE - 1))
+        m = player_board & (player_board >> (STRIDE - 1))
         if m & (m >> (2 * (STRIDE - 1))):
             return True
 
-        m = opp_board & (opp_board >> (STRIDE + 1))
+        m = player_board & (player_board >> (STRIDE + 1))
         if m & (m >> (2 * (STRIDE + 1))):
             return True
         
         return False
+
+    def last_move_won(self) -> bool:
+        """
+        Checks if the *opponent's* board has 4 in a row, column, or diagonal.
+        This is needed to check for wins after a move was played.
+        """
+
+        # Since we've already swapped to the next player after applying the last move,
+        # we need to evaluate the opponent's board here.
+        return Board.has_four(self.all_pieces ^ self.player_board)

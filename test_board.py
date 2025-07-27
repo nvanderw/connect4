@@ -240,9 +240,8 @@ class TestBoard(unittest.TestCase):
         ]
 
         for test_case in test_cases:
-            b = board.Board()
-            b.player_board = parse_board(test_case.bits)
-            self.assertEqual(test_case.expect_win, b.last_move_won(), f"Failed test case \"{test_case.name}\"")
+            player_board = parse_board(test_case.bits)
+            self.assertEqual(test_case.expect_win, board.Board.has_four(player_board), f"Failed test case \"{test_case.name}\"")
 
 if __name__ == '__main__':
     unittest.main()
