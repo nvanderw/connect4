@@ -2,8 +2,12 @@ from board import Board
 
 WIN_EVAL = 10000
 LOSS_EVAL = -WIN_EVAL
+DRAW_EVAL = 0
 
 def eval(b: Board) -> int:
+    if b.is_full:
+        return DRAW_EVAL
+
     if Board.has_four(b.player_board):
         return WIN_EVAL
     
@@ -18,16 +22,25 @@ def negamax(board: Board, depth: int) -> int:
     Negamax search.
     """
 
+    if board.last_move_won():
+        # The opponent's last move won, so we lost.
+        return LOSS_EVAL + depth
+    
+    if board.is_full():
+        return DRAW_EVAL
+
     if depth == 0:
         return eval(board)
-
-    if board.last_move_won():
-        # The opponent's last move won, so we lost
-        return LOSS_EVAL
     
     value = LOSS_EVAL
     for candidate in board.get_legal_move_cols():
         board.apply_move(candidate)
+
+        if board.last_move_won():
+            # We can't do better than winning at this depth, so bail out.
+            board.unapply_move()
+            return WIN_EVAL - (depth - 1) # depth - 1 because we've applied the next move
+
         value = max(value, -negamax(board, depth - 1))
         board.unapply_move()
 
@@ -45,16 +58,27 @@ def negamax_alphabeta(board: Board, depth: int, alpha: int = LOSS_EVAL, beta: in
     and our opponent won't tolerate anything >= beta, so the rest of the nodes can't affect PV. Prune.
     """
 
+    if board.last_move_won():
+        # The opponent's last move won, so we lost.
+        return LOSS_EVAL + depth
+    
+    if board.is_full():
+        return DRAW_EVAL
+
     if depth == 0:
         return eval(board)
-
-    if board.last_move_won():
-        # The opponent's last move won, so we lost
-        return LOSS_EVAL
     
     value = LOSS_EVAL
+
+    # TODO: better move ordering
     for candidate in board.get_legal_move_cols():
         board.apply_move(candidate)
+
+        if board.last_move_won():
+            # We can't do better than winning at this depth, so bail out.
+            board.unapply_move()
+            return WIN_EVAL - (depth - 1)
+
         value = max(value, -negamax_alphabeta(board, depth - 1, -beta, -alpha))
         board.unapply_move()
 

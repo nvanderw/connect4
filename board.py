@@ -30,12 +30,17 @@
 # By just adding 1 at the "bottom" of the column, we get: 000010. The 1 carries all the way over to the
 # "lowest" available spot to give us a mask 000010, which is the bitmask of the "move".
 
+import functools
+
 NUM_ROWS = 6
 NUM_COLS = 7
 STRIDE = NUM_ROWS + 1 # Include the extra sentinel bit.
 
 # Masks for each column, not including the sentinel bit.
 COLUMN_MASKS = [((1 << (STRIDE - 1)) - 1) << (STRIDE * c) for c in range(NUM_COLS)]
+
+# Mask for all the playable positions on the board
+BOARD_MASK = functools.reduce(lambda x, y: x | y, COLUMN_MASKS, 0)
 
 # Masks for just the bottom bit of each column - to play a piece, we'll add this to the column and
 # let the bit "carry" into the first available 0 (empty spot).
@@ -159,3 +164,9 @@ class Board:
         # Since we've already swapped to the next player after applying the last move,
         # we need to evaluate the opponent's board here.
         return Board.has_four(self.all_pieces ^ self.player_board)
+    
+    def is_full(self) -> bool:
+        """
+        Checks if the board is full; if so, this is a draw.
+        """
+        return (self.all_pieces & BOARD_MASK) == BOARD_MASK
