@@ -59,12 +59,16 @@ class TestBoard(unittest.TestCase):
         self.assertEqual(board.NUM_COLS * board.NUM_ROWS, num_moves)
         
         # Board is full now, try to backtrack
+        print()
         for _ in range(num_moves):
             b.unapply_move()
         
         # Expect empty board
         self.assertEqual(0, b.all_pieces)
         self.assertEqual(0, b.player_board)
+
+        # Expect empty hash; this checks consistency of our Zobrist hashes across apply/unapply
+        self.assertEqual(0, b.hash)
     
     def test_last_move_won(self):
         @dataclass

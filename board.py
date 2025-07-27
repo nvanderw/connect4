@@ -31,6 +31,7 @@
 # "lowest" available spot to give us a mask 000010, which is the bitmask of the "move".
 
 import functools
+import random
 
 NUM_ROWS = 6
 NUM_COLS = 7
@@ -49,6 +50,25 @@ BOTTOM_MASKS = [1 << (STRIDE * c) for c in range(NUM_COLS)]
 # Masks for the top bit of each column; used to check which columns are full so we can compute
 # the list of legal moves
 TOP_MASKS = [1 << (STRIDE * c + STRIDE - 2) for c in range(NUM_COLS)]
+
+# Zobrist hashes. We need a random hash for each position + piece combo, plus a side-to-move hash.
+# So this is essentially a map of color -> square -> hash.
+SQUARE_HASHES = [
+    [
+        random.randrange(0, 1<<64) for _ in range(NUM_COLS * NUM_ROWS)
+    ] for _ in range(2)
+]
+
+SIDE_TO_MOVE_HASH = random.randrange(0, 1<<64)
+
+# In order to look up the SQUARE_HASHES for a given move, we need to know what the bit index of the
+# move is. There are some bitwise ways we could do this but it's easiest to just generate
+# a lookup table from move mask -> square index (0..48).
+MOVE_MASK_TO_SQUARE_IX = {}
+
+for c in range(NUM_COLS):
+    for r in range(NUM_ROWS):
+        MOVE_MASK_TO_SQUARE_IX[1 << (c * STRIDE + r)] = c * NUM_ROWS + r
 
 class Debug:
     @staticmethod
@@ -81,6 +101,9 @@ class Board:
 
         # Stack of move masks so we can easily unapply moves.
         self.move_stack = []
+
+        # Zobrist hash
+        self.hash = 0
     
     def get_legal_move_cols(self) -> list[int]:
         """
@@ -105,6 +128,9 @@ class Board:
         self.player_board ^= self.all_pieces
         self.all_pieces ^= move_mask
 
+        self.hash ^= SIDE_TO_MOVE_HASH
+        self.hash ^= SQUARE_HASHES[len(self.move_stack) & 1][MOVE_MASK_TO_SQUARE_IX[move_mask]]
+
         self.move_stack.append(move_mask)
     
     def unapply_move(self):
@@ -117,6 +143,9 @@ class Board:
         # Just clear it from all_pieces and then swap the player.
         self.all_pieces ^= move_mask
         self.player_board ^= self.all_pieces
+
+        self.hash ^= SIDE_TO_MOVE_HASH
+        self.hash ^= SQUARE_HASHES[len(self.move_stack) & 1][MOVE_MASK_TO_SQUARE_IX[move_mask]]
     
     @staticmethod
     def has_four(player_board) -> bool:
