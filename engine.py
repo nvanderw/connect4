@@ -1,22 +1,24 @@
+import board
 from board import Board
 
 WIN_EVAL = 10000
 LOSS_EVAL = -WIN_EVAL
 DRAW_EVAL = 0
 
+def center_weight(player_board: int):
+    # Controlling the center is important. Count the middle and adjacent columns.
+    # int.bit_count uses GCC's __builtn_popcount which uses the POPCNT instruction
+    # if it's available on this CPU.
+    # https://github.com/python/cpython/blob/6784ef7da7cbf1a944fd0685630ced54e4a0066c/Include/internal/pycore_bitutils.h#L101
+    score = 3 * (player_board & board.COLUMN_MASKS[3]).bit_count()
+    score += 2 * (player_board & board.COLUMN_MASKS[2]).bit_count() + 2 * (player_board & board.COLUMN_MASKS[4]).bit_count()
+
+    return score
+
 def eval(b: Board) -> int:
-    if b.is_full:
-        return DRAW_EVAL
+    return center_weight(b.player_board) - center_weight(b.opp_board())
 
-    if Board.has_four(b.player_board):
-        return WIN_EVAL
-    
-    if Board.has_four(b.opp_board()):
-        return LOSS_EVAL
-
-    # TODO improve eval
-    return 0
-
+# TODO: return PV as well
 def negamax(board: Board, depth: int) -> int:
     """
     Negamax search.
