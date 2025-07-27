@@ -142,6 +142,13 @@ class Board:
             return True
         
         return False
+    
+    def opp_board(self):
+        """
+        Returns the player board from the opponent's perspective. Use player_board for the
+        current player's perspective.
+        """
+        return self.all_pieces ^ self.player_board
 
     def last_move_won(self) -> bool:
         """
